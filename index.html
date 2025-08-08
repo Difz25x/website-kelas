@@ -858,6 +858,53 @@
         let sidebarOpen = false;
         let showingAllStudents = false;
         let currentAuthTab = 'login';
+        let isOnline = navigator.onLine;
+
+        // Simple cloud simulation using localStorage with sync indicators
+        function saveToCloud(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                updateConnectionStatus();
+                return Promise.resolve(true);
+            } catch (error) {
+                console.error('Storage failed:', error);
+                return Promise.resolve(false);
+            }
+        }
+
+        function loadFromCloud(key, defaultValue = null) {
+            try {
+                const localData = localStorage.getItem(key);
+                return Promise.resolve(localData ? JSON.parse(localData) : defaultValue);
+            } catch (error) {
+                console.error('Load failed:', error);
+                return Promise.resolve(defaultValue);
+            }
+        }
+
+        function updateConnectionStatus() {
+            const sessionStatus = document.getElementById('session-status');
+            if (sessionStatus) {
+                if (isOnline) {
+                    sessionStatus.textContent = '● Online';
+                    sessionStatus.className = 'text-xs text-green-600 ml-2';
+                } else {
+                    sessionStatus.textContent = '● Offline';
+                    sessionStatus.className = 'text-xs text-yellow-600 ml-2';
+                }
+            }
+        }
+
+        // Monitor connection status
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateConnectionStatus();
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateConnectionStatus();
+        });
 
         // Session management
         const SESSION_KEY = 'currentUserSession';
@@ -865,22 +912,111 @@
 
         // Secure admin codes (only 2 admin accounts allowed)
         const ADMIN_CODES = {
-            'QURNSU4yMDI0U01QTjE=': 'owner', // Your account
-            'R1VSVTIwMjRLRUxBUzdC': 'teacher' // Teacher account
+            'ADMIN2024SMPN1': 'owner', // Your account
+            'GURU2024KELAS7B': 'teacher' // Teacher account
         };
 
-        // User accounts storage (stored in localStorage for persistence)
-        let userAccounts = JSON.parse(localStorage.getItem('userAccounts')) || {};
-        let studentData = JSON.parse(localStorage.getItem('studentData')) || [];
-        let announcements = JSON.parse(localStorage.getItem('announcements')) || [
+        // Default data that all users can see
+        const defaultStudentData = [
+            { id: 1, name: "Ahmad Rizki Pratama", role: "Ketua Kelas", username: "ahmad_rizki", password: "siswa123", status: "active" },
+            { id: 2, name: "Siti Nurhaliza", role: "Wakil Ketua", username: "siti_nur", password: "siswa123", status: "active" },
+            { id: 3, name: "Budi Santoso", role: "Sekretaris", username: "budi_santoso", password: "siswa123", status: "active" },
+            { id: 4, name: "Dewi Sartika", role: "Bendahara", username: "dewi_sartika", password: "siswa123", status: "active" },
+            { id: 5, name: "Andi Wijaya", role: "Seksi Keamanan", username: "andi_wijaya", password: "siswa123", status: "active" },
+            { id: 6, name: "Maya Putri", role: "Seksi Kebersihan", username: "maya_putri", password: "siswa123", status: "active" },
+            { id: 7, name: "Reza Firmansyah", role: "Seksi Kerohanian", username: "reza_firman", password: "siswa123", status: "active" },
+            { id: 8, name: "Indah Permata", role: "Siswa", username: "indah_permata", password: "siswa123", status: "active" },
+            { id: 9, name: "Fajar Nugroho", role: "Siswa", username: "fajar_nugroho", password: "siswa123", status: "active" },
+            { id: 10, name: "Lestari Wulandari", role: "Siswa", username: "lestari_wulan", password: "siswa123", status: "active" },
+            { id: 11, name: "Dimas Prasetyo", role: "Siswa", username: "dimas_prasetyo", password: "siswa123", status: "active" },
+            { id: 12, name: "Ayu Lestari", role: "Siswa", username: "ayu_lestari", password: "siswa123", status: "active" },
+            { id: 13, name: "Bayu Setiawan", role: "Siswa", username: "bayu_setiawan", password: "siswa123", status: "active" },
+            { id: 14, name: "Citra Dewi", role: "Siswa", username: "citra_dewi", password: "siswa123", status: "active" },
+            { id: 15, name: "Eko Prasetyo", role: "Siswa", username: "eko_prasetyo", password: "siswa123", status: "active" },
+            { id: 16, name: "Fitri Handayani", role: "Siswa", username: "fitri_handayani", password: "siswa123", status: "active" },
+            { id: 17, name: "Gilang Ramadhan", role: "Siswa", username: "gilang_ramadhan", password: "siswa123", status: "active" },
+            { id: 18, name: "Hana Safitri", role: "Siswa", username: "hana_safitri", password: "siswa123", status: "active" },
+            { id: 19, name: "Ivan Kurniawan", role: "Siswa", username: "ivan_kurniawan", password: "siswa123", status: "active" },
+            { id: 20, name: "Jihan Maharani", role: "Siswa", username: "jihan_maharani", password: "siswa123", status: "active" },
+            { id: 21, name: "Kevin Adiputra", role: "Siswa", username: "kevin_adiputra", password: "siswa123", status: "active" },
+            { id: 22, name: "Luna Sari", role: "Siswa", username: "luna_sari", password: "siswa123", status: "active" },
+            { id: 23, name: "Maulana Yusuf", role: "Siswa", username: "maulana_yusuf", password: "siswa123", status: "active" },
+            { id: 24, name: "Nadia Putri", role: "Siswa", username: "nadia_putri", password: "siswa123", status: "active" },
+            { id: 25, name: "Omar Hakim", role: "Siswa", username: "omar_hakim", password: "siswa123", status: "active" },
+            { id: 26, name: "Putri Amelia", role: "Siswa", username: "putri_amelia", password: "siswa123", status: "active" },
+            { id: 27, name: "Qori Maulida", role: "Siswa", username: "qori_maulida", password: "siswa123", status: "active" },
+            { id: 28, name: "Rizal Fauzi", role: "Siswa", username: "rizal_fauzi", password: "siswa123", status: "active" },
+            { id: 29, name: "Sari Indah", role: "Siswa", username: "sari_indah", password: "siswa123", status: "active" },
+            { id: 30, name: "Taufik Hidayat", role: "Siswa", username: "taufik_hidayat", password: "siswa123", status: "active" }
+        ];
+
+        const defaultAnnouncements = [
             {
                 id: 1,
                 title: "Selamat Datang di Sistem Kelas VII B",
-                content: "Sistem manajemen kelas telah aktif. Silakan daftar atau login untuk mengakses fitur-fitur yang tersedia.",
+                content: "Sistem manajemen kelas telah aktif. Silakan daftar atau login untuk mengakses fitur-fitur yang tersedia. Password default untuk semua siswa adalah 'siswa123'.",
                 priority: "info",
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+            },
+            {
+                id: 2,
+                title: "Informasi Login Siswa",
+                content: "Semua siswa dapat login menggunakan username masing-masing dengan password default 'siswa123'. Silakan hubungi admin jika mengalami kesulitan login.",
+                priority: "important",
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+            },
+            {
+                id: 3,
+                title: "Struktur Organisasi Kelas Telah Ditetapkan",
+                content: "Struktur organisasi kelas VII B telah ditetapkan dengan Ahmad Rizki Pratama sebagai Ketua Kelas dan Siti Nurhaliza sebagai Wakil Ketua. Selamat kepada semua pengurus kelas!",
+                priority: "success",
                 date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
             }
         ];
+
+        // Initialize data with defaults if not exists
+        function initializeData() {
+            // Student data
+            let studentData = JSON.parse(localStorage.getItem('studentData'));
+            if (!studentData || studentData.length === 0) {
+                studentData = [...defaultStudentData];
+                localStorage.setItem('studentData', JSON.stringify(studentData));
+            }
+
+            // User accounts - create from student data
+            let userAccounts = JSON.parse(localStorage.getItem('userAccounts')) || {};
+            
+            // Add default student accounts if they don't exist
+            defaultStudentData.forEach(student => {
+                if (!userAccounts[student.username]) {
+                    userAccounts[student.username] = {
+                        name: student.name,
+                        username: student.username,
+                        password: student.password,
+                        role: 'student',
+                        status: student.status,
+                        registeredAt: new Date().toISOString()
+                    };
+                }
+            });
+            
+            localStorage.setItem('userAccounts', JSON.stringify(userAccounts));
+
+            // Announcements
+            let announcements = JSON.parse(localStorage.getItem('announcements'));
+            if (!announcements || announcements.length === 0) {
+                announcements = [...defaultAnnouncements];
+                localStorage.setItem('announcements', JSON.stringify(announcements));
+            }
+
+            return { studentData, userAccounts, announcements };
+        }
+
+        // Initialize all data
+        const initialData = initializeData();
+        let userAccounts = initialData.userAccounts;
+        let studentData = initialData.studentData;
+        let announcements = initialData.announcements;
         
         // News and voting data
         let newsData = JSON.parse(localStorage.getItem('newsData')) || [
@@ -1164,7 +1300,7 @@
                     status: 'active'
                 };
                 studentData.push(newStudent);
-                localStorage.setItem('studentData', JSON.stringify(studentData));
+                saveToCloud('studentData', studentData);
             }
             
             // Save to localStorage
@@ -1258,6 +1394,9 @@
             document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
             document.getElementById('user-display-name').textContent = currentUser.name;
             document.getElementById('user-role-display').textContent = currentUser.role === 'admin' ? '(Admin)' : '(Siswa)';
+            
+            // Update connection status
+            updateConnectionStatus();
             
             // Show/hide admin features
             if (currentUser.role === 'admin') {
@@ -2172,5 +2311,5 @@
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96bc2244c3655f6f',t:'MTc1NDYyNTkxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96bdf39c72c1712c',t:'MTc1NDY0NDk3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
